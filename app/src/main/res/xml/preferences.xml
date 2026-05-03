@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="Server">
+
+        <EditTextPreference
+            android:key="server_url"
+            android:title="Server URL"
+            android:summary="e.g. wss://your-tunnel.trycloudflare.com"
+            android:dialogTitle="Enter WebSocket Server URL"
+            android:inputType="textUri"
+            android:singleLine="true"/>
+
+        <EditTextPreference
+            android:key="room_id"
+            android:title="Room ID"
+            android:summary="Sama untuk semua HP yang mau connect"
+            android:defaultValue="room-001"
+            android:dialogTitle="Enter Room ID"
+            android:singleLine="true"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Identity">
+
+        <EditTextPreference
+            android:key="user_name"
+            android:title="Your Name"
+            android:summary="Nama yang tampil ke pengguna lain"
+            android:defaultValue="User"
+            android:dialogTitle="Enter your name"
+            android:singleLine="true"/>
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
