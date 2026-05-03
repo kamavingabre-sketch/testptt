@@ -17,42 +17,63 @@ class AudioPlayer {
         AudioFormat.ENCODING_PCM_16BIT
     ).coerceAtLeast(3200)
 
-    private val track = AudioTrack.Builder()
-        .setAudioAttributes(
-            AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                .build()
-        )
-        .setAudioFormat(
-            AudioFormat.Builder()
-                .setSampleRate(SAMPLE_RATE)
-                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                .build()
-        )
-        .setBufferSizeInBytes(bufferSize)
-        .setTransferMode(AudioTrack.MODE_STREAM)
-        .build()
+    // Lazy init agar tidak crash saat service belum fully started
+    private var track: AudioTrack? = null
 
-    init {
-        track.play()
+    private fun getOrCreateTrack(): AudioTrack {
+        return track ?: AudioTrack.Builder()
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+            .setAudioFormat(
+                AudioFormat.Builder()
+                    .setSampleRate(SAMPLE_RATE)
+                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                    .build()
+            )
+            .setBufferSizeInBytes(bufferSize)
+            .setTransferMode(AudioTrack.MODE_STREAM)
+            .build()
+            .also {
+                it.play()
+                track = it
+            }
     }
 
     fun play(data: ByteArray) {
-        if (track.playState == AudioTrack.PLAYSTATE_PLAYING) {
-            track.write(data, 0, data.size)
+        try {
+            val t = getOrCreateTrack()
+            if (t.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                t.write(data, 0, data.size)
+            }
+        } catch (e: Exception) {
+            // Jika AudioTrack gagal, reset dan coba lagi berikutnya
+            track?.release()
+            track = null
         }
     }
 
     fun setSpeakerphone(audioManager: AudioManager, enabled: Boolean) {
-        audioManager.isSpeakerphoneOn = enabled
-        audioManager.mode = if (enabled) AudioManager.MODE_IN_COMMUNICATION
-                            else AudioManager.MODE_NORMAL
+        try {
+            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+            @Suppress("DEPRECATION")
+            audioManager.isSpeakerphoneOn = enabled
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun release() {
-        track.stop()
-        track.release()
+        try {
+            track?.stop()
+            track?.release()
+            track = null
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
